@@ -33,7 +33,6 @@ function Carousel() {
 export default function Home() {
   return (
     <MainLayout>
-      <Carousel />
     </MainLayout>
   );
 }

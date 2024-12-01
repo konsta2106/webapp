@@ -1,6 +1,7 @@
 "use client";  // Use client-side rendering
 import styled from 'styled-components';
 import Link from 'next/link';
+import ImageCarousel from './components/Carousel';
 
 const Header = styled.header`
   position: sticky;
@@ -41,6 +42,7 @@ export default function MainLayout({ children }) {
           <a href="#contact">Contact</a>
         </Nav>
       </Header>
+      <ImageCarousel />
       <main>{children}</main>
       <Footer id="contact">
         <p>Contact Information</p>

@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Container, Typography, Card, CardContent } from '@mui/material'; 
-import { Grid } from '@mui/material';
+import { Container, Typography, Card, CardContent, Grid } from '@mui/material';
 import { styled } from '@mui/system';
 import MainLayout from '../MainLayout';
 import dayjs from 'dayjs';
@@ -20,6 +19,11 @@ const StyledGridItem = styled(Grid)`
 
 const StyledCard = styled(Card)`
   transition: transform 0.2s;
+  height: 150px; /* Set a fixed height for the cards */
+  overflow: hidden; /* Hide overflow content */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   &:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
@@ -40,8 +44,9 @@ export default function FuelPrices() {
       const fetchFuelData = async () => {
         try {
           const response = await axios.get('/api/fuel-prices');
-          const lastElement = response.data.data[response.data.data.length - 1];
-          setFuelData(lastElement.stations);
+          const latestFuelPrice = await axios.get('/api/fuel-prices/latest');
+          console.log('latestFuelPrice:', latestFuelPrice.data);
+          setFuelData(latestFuelPrice.data.data.stations);
 
           const historicalData = response.data.data;
           const prices = historicalData.map(item => ({
@@ -49,52 +54,65 @@ export default function FuelPrices() {
             average: item.keskiarvo,
           }));
 
-          setTimestamp(dayjs(lastElement.timestamp).format('ddd, DD.MM HH:mm'));
-
           setChartData({
-            series: [{
-              name: 'Average Price',
-              data: prices.map(price => ({ x: new Date(price.timestamp), y: price.average })),
-            }],
+            series: [
+              {
+                name: "Average Price",
+                data: prices.map(item => parseFloat(item.average)),
+              },
+            ],
             options: {
               chart: {
                 type: 'line',
                 height: 350,
+                zoom: {
+                  enabled: true,
+                  type: 'x', // Enable zooming along the x-axis
+                  autoScaleYaxis: true, // Automatically adjust the y-axis when zooming
+                },
+                toolbar: {
+                  autoSelected: 'zoom', // Enable zoom tool by default
+                  tools: {
+                    zoom: true,
+                    zoomin: true,
+                    zoomout: true,
+                    pan: true,
+                    reset: true, // Add a reset button to reset the zoom
+                  },
+                },
               },
               title: {
-                text: 'Historical Average Fuel Prices',
+                text: 'Historical Fuel Prices',
                 align: 'left',
+                style: {
+                  fontSize: '24px',
+                  color: '#1a73e8',
+                },
               },
               xaxis: {
-                type: 'datetime',
-                labels: {
-                  formatter: (value) => dayjs(value).format('ddd, DD.MM HH:mm'),
-                },
-                title: {
-                  text: 'Date',
-                },
+                categories: prices.map(item => dayjs(item.timestamp).format('dddd')),
               },
               yaxis: {
                 title: {
-                  text: 'Average Price (€)',
+                  text: 'Price (€)',
                 },
               },
               tooltip: {
-                enabled: true,
                 theme: 'dark',
-                y: {
-                  formatter: (value) => `€ ${value}`,
-                },
               },
               markers: {
-                size: 5,
+                size: 5, // Size of the markers
+                colors: ['#1a73e8'], // Color of the markers
+                strokeColors: '#fff', // Border color of the markers
+                strokeWidth: 2, // Border width of the markers
                 hover: {
-                  sizeOffset: 3,
-                }
-              }
+                  size: 7, // Size of the markers on hover
+                },
+              },
             },
           });
 
+          setTimestamp(dayjs(latestFuelPrice.timestamp).format('YYYY-MM-DD HH:mm:ss'));
         } catch (error) {
           console.error('Error fetching fuel data:', error);
         }
@@ -103,11 +121,16 @@ export default function FuelPrices() {
     }
   }, []);
 
+  // Log fuelData state whenever it changes
+  useEffect(() => {
+    console.log('fuelData:', fuelData);
+  }, [fuelData]);
+
   return (
     <MainLayout>
       <StyledContainer>
         <Header variant="h4" component="h1" gutterBottom>
-          {`Cheapest Fuel Prices - Tampere - ${timestamp}`}
+          Fuel Prices
         </Header>
         <Grid container spacing={3}>
           {fuelData.map((station, index) => (
@@ -119,6 +142,9 @@ export default function FuelPrices() {
                   </Typography>
                   <Typography variant="h5" component="p" color={station.price < 1.5 ? 'green' : 'red'}>
                     Price: {station.price} €
+                  </Typography>
+                  <Typography variant="p" component="p">
+                    Updated: {station.updated}
                   </Typography>
                 </CardContent>
               </StyledCard>

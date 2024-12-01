@@ -1,7 +1,8 @@
 const express = require('express');
-const { getFuelPrices } = require('../controllers/fuelController');
+const { getFuelPrices, getLatestFuelPrices } = require('../controllers/fuelController');
 
 const router = express.Router();
 router.get('/', getFuelPrices);
+router.get('/latest', getLatestFuelPrices);
 
 module.exports = router;
